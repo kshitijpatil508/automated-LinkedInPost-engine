@@ -2,11 +2,20 @@
 **🎥 Watch the System Architecture & Demo (Loom) https://www.loom.com/share/c85dba6330eb4f21a6c22b9330006235**
 
 ## System Overview
-A semi-automated, state-driven content ingestion and drafting pipeline built in n8n. The system monitors tech-focused RSS feeds, scores candidates based on custom heuristics, drafts brand-aligned LinkedIn posts using Llama 3.3, generates contextual visual assets via Gemini/Cloudinary, and halts for human approval via an interactive Slack UI.
+
+This repository contains a production-ready, fault-tolerant content engine built in n8n. It is designed to solve the "generic AI content" problem by combining autonomous generation with strict human oversight and environment boundaries.
+
+At its core, the pipeline ingests tech-focused RSS feeds, scores candidates using custom heuristics, and drafts highly specific, brand-aligned LinkedIn posts using Llama 3.3. Contextual visual assets are concurrently generated via Gemini and hosted on Cloudinary, packaging a complete, production-ready social asset before halting for manual approval via an interactive Slack UI.
+
+**Beyond standard integrations, this architecture was engineered for strict reliability, featuring:**
+* **Self-Healing Ingestion:** Dynamic fallbacks to historical data if live RSS feeds run dry.
+* **Bulletproof Parsing:** Custom regex extractors that bypass common LLM function-calling hallucinations.
+* **Strict State Management:** PostgreSQL-backed two-phase commits to eliminate duplicate processing and prevent "zombie" database records.
+* **Environment Isolation:** A custom-built mock API endpoint to validate final JSON payloads while safely bypassing third-party OAuth delays.
 
 ![Slack UI Screenshot](https://github.com/user-attachments/assets/1b14447b-a85d-4e18-95e8-5a955c176bed) 
 
-* The interactive "Human Gatekeeper" UI built with Slack Block Kit.*
+*The interactive "Human Gatekeeper" UI built with Slack Block Kit.
 
 ---
 
@@ -30,17 +39,20 @@ A semi-automated, state-driven content ingestion and drafting pipeline built in 
 ![n8n Canvas Screenshot](https://github.com/user-attachments/assets/d85bf234-ac51-4a75-b1a4-6119646837d9)
 ![n8n Canvas Screenshot2](https://github.com/user-attachments/assets/bbd15345-3418-436a-9e8a-2586a4669ff1)
 
-* The ingestion, scoring, and drafting and rounting workflows and pipeline.*
+*The ingestion, scoring, routing, and drafting workflows and pipeline.
 
 ---
 
-## 🏗️ Engineering Evaluation Criteria
+## 🏗️ System Architecture & Reliability
 
 ### Security Mindset (Credential Handling)
 * **n8n Credential Manager:** No API keys, database passwords, or auth tokens exist in plaintext within the workflow logic. Everything is routed through n8n’s native credential manager.
 * **HTTP Node Security:** For custom API calls (like Slack updates or mock endpoints), I utilized n8n's **Predefined Credentials** feature. This ensures that when the JSON workflows are exported and committed to this public repository, there is zero risk of credential leakage or security vulnerabilities.
 
 ### Logical Resilience (Edge Cases & Fallbacks)
+* **Granular Error Handling & Retries:** Applied distinct handling strategies based on error severity. Transient external API failures (HTTP/AI nodes) use node-level automated retries. Critical system failures (e.g., Postgres connection drops) immediately halt the workflow to prevent cascading bad data.
+* **Global Error Alerting:** Implemented a dedicated error-handling workflow (`wf4_error_workflow_trigger.json`) acting as a global safety net. Any halted node triggers an immediate Slack alert containing specific error messages and execution logs, ensuring zero silent failures.
+* **AI Model Fallbacks:** Configured fallback models within the LangChain AI agents. If the primary LLM endpoint fails or rate-limits, the system seamlessly routes the prompt to a secondary model to maintain pipeline uptime.
 * **Self-Healing Ingestion:** If the primary RSS feed returns 0 items for the current 24-hour window (slow news day), the system dynamically expands the timeframe to fetch yesterday's top articles, ensuring the pipeline never runs dry.
 * **LLM Hallucination Bypasses:** Modern LLMs often struggle with strict JSON function calling, occasionally injecting markdown backticks that crash standard parsers. I implemented a custom Regex parsing node (The "Titanium Hammer") to aggressively extract and clean JSON payloads, guaranteeing 100% parse reliability.
 * **Two-Phase Commits:** When posting, the database status only updates to `posted` *after* the API returns a `200 OK` success response. This prevents "zombie" records where the database thinks a post is live, but the API actually failed.
@@ -55,6 +67,6 @@ A semi-automated, state-driven content ingestion and drafting pipeline built in 
 * `/workflows/wf1_ingestion_and_drafting.json` - The main Cron-triggered pipeline.
 * `/workflows/wf2_interactive_router.json` - The Slack webhook listener and CRUD operator.
 * `/workflows/wf3_mock_production_api.json` - The simulated LinkedIn endpoint.
-* `/workflows/wf4_error_workflow_trigger.json` - The Error Notifyer Workflow.
+* `/workflows/wf4_error_workflow_trigger.json` - The Error Notifier Workflow.
 
 *Note: To review the logic, you can import these JSON files directly into any n8n instance.*
