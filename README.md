@@ -14,7 +14,7 @@ At its core, the pipeline ingests tech-focused RSS feeds, scores candidates usin
 * **Environment Isolation:** A custom-built mock API endpoint to validate final JSON payloads while safely bypassing third-party OAuth delays.
 
 ![Slack UI Screenshot](https://github.com/user-attachments/assets/1b14447b-a85d-4e18-95e8-5a955c176bed) 
-![Slack UI Screenshot](https://github.com/user-attachments/assets/6a16608a-df38-45f7-b117-a563ed26ee98)
+![Slack UI Screenshot](https://github.com/user-attachments/assets/a60b8970-afc3-4c06-ba3c-1c224b2572b7)
 * The interactive "Human Gatekeeper" UI built with Slack Block Kit.
 
 ---
