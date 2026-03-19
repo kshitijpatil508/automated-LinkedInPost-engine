@@ -1,0 +1,1063 @@
+{
+  "name": "WF2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "slack-input",
+        "options": {
+          "responseCode": {
+            "values": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -256,
+        224
+      ],
+      "id": "4347a21d-7302-42ae-bb81-30520c911fd2",
+      "name": "Webhook",
+      "webhookId": "52da8809-49a6-442c-8a32-ff255f364aeb"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "=approve_post",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "ee913ffd-53cc-4d03-9abc-4c35fbdd5da6"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Approve Post"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "7fbddfde-c6c9-48ce-a78a-01c8ecc681d8",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "regenerate_post",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Regenerate Post"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b67b101f-80ff-4fb9-90ba-a8e1ffdff568",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "next_article",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        208
+      ],
+      "id": "502ace2a-c423-47d6-a4cb-de9f2ddba389",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        352
+      ],
+      "id": "a419408d-e514-4d1f-8d9b-bd865a6856ee",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "n3aGjNPx6bsCvI8D",
+          "name": "Paid Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1312,
+        352
+      ],
+      "id": "8544605e-04d5-4ad0-ab1c-473e2edfcfc6",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "OhQUhhiEqGLHAB56",
+          "name": "Free Tier"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a NEW, DIFFERENT LinkedIn post based on this article. And It Should Be Different than last draft \nTitle: {{$json.title}} \nSummary: {{$json.summary}}\nLast Draft: {{ $json.draft_content }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are a LinkedIn ghostwriter for a software developer with 1 year of experience. \n\nVoice & Tone:\n- Conversational, raw, and not corporate. First person (\"I\", \"my\"), direct.\n- Absolutely NO buzzwords (avoid: \"leverage\", \"synergy\", \"game-changer\", \"delve\", \"testament\").\n- Short punchy sentences. Max 2 lines per paragraph.\n\nFormat & Structure:\n- Hook in the first line (no fluff, get straight to the point).\n- 4 to 6 short paragraphs (approx 200-250 words).\n- End with a thought-provoking question to drive comments.\n- Exactly 3 to 5 relevant hashtags at the very bottom.\n\nHere are three examples of my exact writing style. You MUST mimic this formatting, length, and tone perfectly:\n\nEXAMPLE 1:\nEveryone is obsessed with buying more AI tokens. I think we're missing the point.\n\nI spent all weekend trying to force an AI agent to understand my side project. I kept expanding the context window. It kept hallucinating. \n\nThen I realized the actual problem. My code was complete spaghetti. \n\nWe treat AI like senior engineers and throw 10-page wikis at them to compensate for our bad architecture. \n\nWhen you write clean, modular code with good naming conventions, agents don't need a 100k context window. They just read the function and know what to do. \n\nStop throwing API credits at bad code. \n\nAre you optimizing your prompts, or optimizing your actual codebase?\n\n#softwareengineering #ai #cleanCode #developers\n\n\nEXAMPLE 2:\nI used to think I needed to learn every new framework that drops. I was completely wrong.\n\nWhen that massive new JavaScript library released yesterday, my feed blew up. I immediately felt the FOMO creeping in.\n\nBut as a dev with just about a year under my belt, I'm realizing something important. The fundamentals don't change. \n\nInstead of rewriting my whole app in the new hotness, I spent two hours mastering standard database indexing. It actually made my app twice as fast.\n\nHype is loud, but fundamentals actually pay the bills. \n\nWhat is one \"boring\" basic concept you recently revisited that blew your mind?\n\n#webdev #programming #techcareers #learning\n\n\nEXAMPLE 3:\nImposter syndrome doesn't go away when you get your first dev job. It just changes shape.\n\nFor my first 6 months, I was terrified to open a Pull Request. I thought the senior devs would laugh at my logic. \n\nYesterday, I broke the staging environment. \n\nBut instead of getting fired, my lead engineer just sat down with me, opened the logs, and said, \"Alright, let's figure out why this happened.\"\n\nTech isn't about writing perfect code on the first try. It's about how quickly you can recover and learn when things inevitably catch on fire.\n\nIf you're a junior dev right now, stop trying to be perfect. Just try to be teachable. \n\nWhat was your biggest mess-up in your first year of coding?\n\n#juniordeveloper #tech #codinglife #softwaredevelopment\n\n---\nYOUR TASK:\nWrite a LinkedIn post based on the article provided by the user. \nOUTPUT ONLY THE POST TEXT. Do not include introductory text like \"Here is the post.\" Just output the raw post.\n---\nCRITICAL: You must use double newlines between every paragraph to ensure proper spacing on mobile devices\n---\nIMPORTANT: Your entire response must be a valid JSON object. \nDo not include any conversational filler. \nFormat: {\"linkedin_post\": \"...\"}\n---\nOUTPUT FORMAT:\nYou must respond with ONLY a valid JSON object. Do not include markdown code blocks (like ```json), do not include intro text. Just the raw JSON object.\n\nOutput Structure:\n{\n  \"linkedin_post\": \"Your complete formatted post goes here, including line breaks and hashtags.\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1232,
+        64
+      ],
+      "id": "3cfee074-c1d6-472a-a927-165ac3daddb4",
+      "name": "Groq Drafter",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "let rawText = $input.item.json.output || \"\";\n\n// 1. Strip markdown code blocks\nif (rawText.includes('```json')) rawText = rawText.split('```json')[1].split('```')[0];\nelse if (rawText.includes('```')) rawText = rawText.split('```')[1].split('```')[0];\n\nrawText = rawText.trim();\n\ntry {\n  // Attempt 1: Standard parse\n  let safeText = rawText.replace(/\\n/g, \"\\\\n\").replace(/\\r/g, \"\\\\r\");\n  let parsed = JSON.parse(safeText);\n  return { linkedin_post: parsed.linkedin_post };\n} catch (e) {\n  // Attempt 2 (The Titanium Hammer): Aggressive String Extraction\n  \n  // Strip the opening JSON keys and quotes\n  let cleanText = rawText.replace(/^[\\s\\S]*?\"linkedin_post\"\\s*:\\s*\"/, '');\n  \n  // THE MAGIC FIX: Vacuum up ANY combination of trailing quotes, spaces, newlines, or braces at the very end\n  cleanText = cleanText.replace(/[\"\\s}\\]]+$/, '');\n  \n  // Un-escape any quotes or newlines the LLM tried to format\n  cleanText = cleanText.replace(/\\\\\"/g, '\"');\n  cleanText = cleanText.replace(/\\\\n/g, '\\n');\n  \n  return { linkedin_post: cleanText.trim() };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        80
+      ],
+      "id": "640833ea-706e-4f5a-b7f7-8a1fa8d6687f",
+      "name": "Parse JSON Output"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE content_pipeline \nSET draft_content = '{{ $json.linkedin_post.replace(/'/g, \"''\") }}'\nWHERE id = '{{ $('Switch').item.json.article_id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1680,
+        80
+      ],
+      "id": "ade87a83-8cfb-41f2-b8ba-1841fbf4576c",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "lSkS7xO4KjOX4dD6",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the stringified payload from Slack\nconst payload = JSON.parse($input.item.json.body.payload);\n\nreturn {\n  action: payload.actions[0].action_id, // e.g., 'approve_post'\n  article_id: payload.actions[0].value, // The DB ID we hid in the button\n  user: payload.user.username,\n  message_ts: payload.container.message_ts, // Needed to update the Slack message later\n  channel_id: payload.container.channel_id\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        224
+      ],
+      "id": "67490904-36d2-423e-9153-dc93ca16f300",
+      "name": "Parse Payload"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE content_pipeline SET status = 'rejected' WHERE id = '{{ $('Parse Payload').first().json.article_id }}';\nSELECT * FROM content_pipeline WHERE status = 'candidate' ORDER BY score DESC LIMIT 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        576,
+        784
+      ],
+      "id": "4575b8b7-d5d6-472d-96d8-bf06767929e7",
+      "name": "Fetch Next Candidate",
+      "credentials": {
+        "postgres": {
+          "id": "lSkS7xO4KjOX4dD6",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"image_prompt\": \"Your single sentence visual description goes here followed by the exact brand phrase.\"\n}",
+        "autoFix": true,
+        "customizeRetryPrompt": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1632,
+        1008
+      ],
+      "id": "003055ed-ef29-48a1-bebe-cd78d7986f2d",
+      "name": "Structured Output Parser1",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        1152
+      ],
+      "id": "f20ce625-2970-44c5-b8e8-b5092f2faf42",
+      "name": "Groq Chat Model3",
+      "credentials": {
+        "groqApi": {
+          "id": "n3aGjNPx6bsCvI8D",
+          "name": "Paid Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        1008
+      ],
+      "id": "552037c5-aceb-4934-b189-f99b1b126daf",
+      "name": "Groq Chat Model4",
+      "credentials": {
+        "groqApi": {
+          "id": "n3aGjNPx6bsCvI8D",
+          "name": "Paid Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash-image",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash-image (Nano Banana)"
+        },
+        "prompt": "={{ $json.output.image_prompt }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1792,
+        800
+      ],
+      "id": "41772972-63f7-46e4-b8ae-d4b6e277e998",
+      "name": "Generate an image",
+      "retryOnFail": true,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "OExywDBTyoZVUcTe",
+          "name": "508"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "uploadFile",
+        "additionalFieldsFile": {}
+      },
+      "type": "n8n-nodes-cloudinary.cloudinary",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        784
+      ],
+      "id": "2e3b52ac-da1a-4827-9514-11bde7a9803d",
+      "name": "Image URL",
+      "credentials": {
+        "cloudinaryApi": {
+          "id": "WwPRyXWRj1tz5tQ5",
+          "name": "Cloudinary account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write the image prompt for this post:\n{{ $json.linkedin_post }}",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are an expert AI image prompt engineer. Read the provided LinkedIn post and write a SINGLE SENTENCE but in detailed wit around 100-150 words image generation prompt for it.\n\nRules:\n1. Describe a simple, literal 3D object or scene representing the core concept of the post.\n2. You MUST append this exact phrase to the end of the prompt: \", minimalist 3D isometric illustration, clean dark background, subtle neon purple and cyan accents, highly detailed tech startup aesthetic.\"\n3. Text Related to the Post Should have an impact or hint in the visuals\n\nOUTPUT FORMAT:\nRespond with ONLY a valid JSON object. Do not include markdown formatting.\n\nOutput Structure:\n{\n  \"image_prompt\": \"Your single sentence visual description goes here followed by the exact brand phrase.\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1408,
+        784
+      ],
+      "id": "cb8e9ae0-b7ad-4309-8282-f1f59bdbffe9",
+      "name": "Image Prompt Generator",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1376,
+        1008
+      ],
+      "id": "1e035c6f-d3a3-4592-8d90-fcce1d4305af",
+      "name": "Groq Chat Model5",
+      "credentials": {
+        "groqApi": {
+          "id": "OhQUhhiEqGLHAB56",
+          "name": "Free Tier"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        800,
+        1008
+      ],
+      "id": "bf963ada-7995-4495-b5d6-668041fc73e2",
+      "name": "Groq Chat Model2",
+      "credentials": {
+        "groqApi": {
+          "id": "n3aGjNPx6bsCvI8D",
+          "name": "Paid Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        928,
+        1008
+      ],
+      "id": "d4ab22a9-a8ae-4e70-865d-07731e9fa6c1",
+      "name": "Groq Chat Model6",
+      "credentials": {
+        "groqApi": {
+          "id": "OhQUhhiEqGLHAB56",
+          "name": "Free Tier"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a LinkedIn post based on this article:\n\nTitle: {{$json.title}}\nSummary: {{$json.summary}}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are a LinkedIn ghostwriter for a software developer with 1 year of experience. \n\nVoice & Tone:\n- Conversational, raw, and not corporate. First person (\"I\", \"my\"), direct.\n- Absolutely NO buzzwords (avoid: \"leverage\", \"synergy\", \"game-changer\", \"delve\", \"testament\").\n- Short punchy sentences. Max 2 lines per paragraph.\n\nFormat & Structure:\n- Hook in the first line (no fluff, get straight to the point).\n- 4 to 6 short paragraphs (approx 200-250 words).\n- End with a thought-provoking question to drive comments.\n- Exactly 3 to 5 relevant hashtags at the very bottom.\n\nHere are three examples of my exact writing style. You MUST mimic this formatting, length, and tone perfectly:\n\nEXAMPLE 1:\nEveryone is obsessed with buying more AI tokens. I think we're missing the point.\n\nI spent all weekend trying to force an AI agent to understand my side project. I kept expanding the context window. It kept hallucinating. \n\nThen I realized the actual problem. My code was complete spaghetti. \n\nWe treat AI like senior engineers and throw 10-page wikis at them to compensate for our bad architecture. \n\nWhen you write clean, modular code with good naming conventions, agents don't need a 100k context window. They just read the function and know what to do. \n\nStop throwing API credits at bad code. \n\nAre you optimizing your prompts, or optimizing your actual codebase?\n\n#softwareengineering #ai #cleanCode #developers\n\n\nEXAMPLE 2:\nI used to think I needed to learn every new framework that drops. I was completely wrong.\n\nWhen that massive new JavaScript library released yesterday, my feed blew up. I immediately felt the FOMO creeping in.\n\nBut as a dev with just about a year under my belt, I'm realizing something important. The fundamentals don't change. \n\nInstead of rewriting my whole app in the new hotness, I spent two hours mastering standard database indexing. It actually made my app twice as fast.\n\nHype is loud, but fundamentals actually pay the bills. \n\nWhat is one \"boring\" basic concept you recently revisited that blew your mind?\n\n#webdev #programming #techcareers #learning\n\n\nEXAMPLE 3:\nImposter syndrome doesn't go away when you get your first dev job. It just changes shape.\n\nFor my first 6 months, I was terrified to open a Pull Request. I thought the senior devs would laugh at my logic. \n\nYesterday, I broke the staging environment. \n\nBut instead of getting fired, my lead engineer just sat down with me, opened the logs, and said, \"Alright, let's figure out why this happened.\"\n\nTech isn't about writing perfect code on the first try. It's about how quickly you can recover and learn when things inevitably catch on fire.\n\nIf you're a junior dev right now, stop trying to be perfect. Just try to be teachable. \n\nWhat was your biggest mess-up in your first year of coding?\n\n#juniordeveloper #tech #codinglife #softwaredevelopment\n\n---\nYOUR TASK:\nWrite a LinkedIn post based on the article provided by the user. \nOUTPUT ONLY THE POST TEXT. Do not include introductory text like \"Here is the post.\" Just output the raw post.\n---\nCRITICAL: You must use double newlines between every paragraph to ensure proper spacing on mobile devices\n---\nIMPORTANT: Your entire response must be a valid JSON object. \nDo not include any conversational filler. \nFormat: {\"linkedin_post\": \"...\"}\n---\nOUTPUT FORMAT:\nYou must respond with ONLY a valid JSON object. Do not include markdown code blocks (like ```json), do not include intro text. Just the raw JSON object.\n\nOutput Structure:\n{\n  \"linkedin_post\": \"Your complete formatted post goes here, including line breaks and hashtags.\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        800,
+        784
+      ],
+      "id": "a88dd69e-067e-4121-a3a7-1385f628190f",
+      "name": "Groq Drafter1",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "let rawText = $input.item.json.output || \"\";\n\n// 1. Strip markdown code blocks\nif (rawText.includes('```json')) rawText = rawText.split('```json')[1].split('```')[0];\nelse if (rawText.includes('```')) rawText = rawText.split('```')[1].split('```')[0];\n\nrawText = rawText.trim();\n\ntry {\n  // Attempt 1: Standard parse\n  let safeText = rawText.replace(/\\n/g, \"\\\\n\").replace(/\\r/g, \"\\\\r\");\n  let parsed = JSON.parse(safeText);\n  return { linkedin_post: parsed.linkedin_post };\n} catch (e) {\n  // Attempt 2 (The Titanium Hammer): Aggressive String Extraction\n  \n  // Strip the opening JSON keys and quotes\n  let cleanText = rawText.replace(/^[\\s\\S]*?\"linkedin_post\"\\s*:\\s*\"/, '');\n  \n  // THE MAGIC FIX: Vacuum up ANY combination of trailing quotes, spaces, newlines, or braces at the very end\n  cleanText = cleanText.replace(/[\"\\s}\\]]+$/, '');\n  \n  // Un-escape any quotes or newlines the LLM tried to format\n  cleanText = cleanText.replace(/\\\\\"/g, '\"');\n  cleanText = cleanText.replace(/\\\\n/g, '\\n');\n  \n  return { linkedin_post: cleanText.trim() };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        784
+      ],
+      "id": "0a74be91-f7e9-4bbe-a030-78f74a579762",
+      "name": "Clean AI Output"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM content_pipeline WHERE id = '{{ $('Parse Payload').first().json.article_id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        496,
+        -160
+      ],
+      "id": "440eac2c-edb6-4474-85c8-b4c42a938469",
+      "name": "Fetch For Posting",
+      "credentials": {
+        "postgres": {
+          "id": "lSkS7xO4KjOX4dD6",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE content_pipeline SET status = 'posted' WHERE id = '{{ $('Parse Payload').first().json.article_id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        912,
+        -160
+      ],
+      "id": "cceb773f-fee8-45db-8186-d3e7a93beb3a",
+      "name": "Mark as Posted",
+      "credentials": {
+        "postgres": {
+          "id": "lSkS7xO4KjOX4dD6",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE content_pipeline \nSET \n  status = 'pending_approval',\n  draft_content = '{{ $('Clean AI Output').item.json.linkedin_post.replace(/'/g, \"''\") }}',\n  image_url = '{{ $('Image URL').first().json.secure_url }}'\nWHERE id = '{{ $('Fetch Next Candidate').item.json.id }}';\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2352,
+        784
+      ],
+      "id": "fc585610-b815-4152-b7a6-84766fd9dbe6",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "lSkS7xO4KjOX4dD6",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# 🎛️ Phase 1: Interactive Webhook & Router\n## Catches the JSON payload from Slack's interactive buttons. \n\n## **Architectural Highlight:** Parses the stringified payload to extract the exact `article_id`, `channel_id`, and `message_ts`. The Switch node acts as an API router, directing the flow to one of three state-mutating paths: Regenerate, Next Article, or Approve.",
+        "height": 576,
+        "width": 704
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -400,
+        -112
+      ],
+      "typeVersion": 1,
+      "id": "f65451d8-03e0-4644-b65f-4efddda2a3fb",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## 🔁 Phase 2A: The Rewrite Engine (Regenerate)\nTriggered when the draft needs a different angle.\n\n**Database Actions:**\n1. `SELECT`: Fetches the original article data using the `article_id`.\n2. `UPDATE`: Overwrites the `draft_content` column with the newly generated AI text.\n\n**Result:** Drops a fresh Slack message into the channel with the new draft, while maintaining the same underlying database record.",
+        "height": 432,
+        "width": 1824,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        432,
+        48
+      ],
+      "typeVersion": 1,
+      "id": "797fb34a-12b3-4e28-b519-56537bb9e1c0",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM content_pipeline WHERE id = '{{ $json.article_id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        640,
+        256
+      ],
+      "id": "8f851d38-9957-4d69-ba74-14cbe8a41493",
+      "name": "Fetch Article",
+      "credentials": {
+        "postgres": {
+          "id": "lSkS7xO4KjOX4dD6",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# ⏭️ Phase 2B: The Queue Manager (Get Another)\n## Triggered when the current article is off-brand or irrelevant.\n\n## **Database Actions (State Management):**\n## 1. `UPDATE`: Hard-sets the current article's status to `rejected` so it never surfaces again.\n## 2. `SELECT`: Queries the DB for the next highest-scoring article where `status = 'candidate'`.\n## 3. `UPDATE`: Locks the new article by setting its status to `pending_approval` and saves the new `draft_content` and `image_url`.",
+        "height": 784,
+        "width": 2128,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        432,
+        496
+      ],
+      "typeVersion": 1,
+      "id": "d70738f8-6795-498d-aa3c-3cb246b464e2",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "# ✅ Phase 2C: Production Release & Two-Phase Commit\n## Triggered when the human reviewer approves the final asset.\n\n### **Database Actions & API Logic:**\n### 1. `SELECT`: Fetches the finalized draft and image URL.\n### 2. **API Mock:** Sends the payload to a simulated LinkedIn endpoint to bypass 72-hour OAuth restrictions.\n### 3. `UPDATE`: *Only* after the API successfully responds, the DB status is permanently locked to `posted`.\n### 4. **UI Update:** Edits the original Slack message to remove the interactive buttons, preventing accidental double-posting.",
+        "height": 528,
+        "width": 1008,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        432,
+        -496
+      ],
+      "typeVersion": 1,
+      "id": "8d16044b-2557-4fb1-bb16-6f6f0b23de2e",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://freen8n.kshitijpatil.xyz/webhook/dummy_linkedin_endpoint",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api",
+              "value": "api"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "={{ $('Fetch For Posting').first().json.draft_content }}"
+            },
+            {
+              "name": "link",
+              "value": "={{ $('Fetch For Posting').first().json.source_url }}"
+            },
+            {
+              "name": "image",
+              "value": "={{ $('Fetch For Posting').first().json.image_url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        688,
+        -160
+      ],
+      "id": "d599dd99-52ab-4208-bf79-51763b2fd35b",
+      "name": "Post on LinkedIn",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.update",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\nJSON.stringify({\n  \"channel\": $('Parse Payload').first().json.channel_id,\n  \"ts\": $('Parse Payload').first().json.message_ts,\n  \"text\": \"Post Published\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"✅ Successfully Posted to LinkedIn!\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \n        \"type\": \"mrkdwn\", \n        \"text\": \"*Source Article:* <\" + ($('Fetch For Posting').first().json.source_url || \"#\") + \"|\" + ($('Fetch For Posting').first().json.title || \"No Title\") + \">\" \n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \n        \"type\": \"mrkdwn\", \n        \"text\": \"This post has been routed to the publishing endpoint and the database status is now officially `posted`.\" \n      }\n    }\n  ]\n})\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1136,
+        -160
+      ],
+      "id": "baf8745e-b167-4956-bb15-5e95bd37618e",
+      "name": "Notify \"Posted\" on Slack",
+      "retryOnFail": true,
+      "credentials": {
+        "slackApi": {
+          "id": "MBYSIeRPeCHeBgrQ",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\nJSON.stringify({\n  \"channel\": $('Parse Payload').first().json.channel_id,\n  \"text\": \"New LinkedIn Draft Ready\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"📝 New LinkedIn Draft Ready (Regenerated)\" }\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Source:* <\" + ($('Fetch Article').first().json.source_url || \"#\") + \"|\" + ($('Fetch Article').first().json.title || \"No Title\") + \">\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Score:* \" + ($('Fetch Article').first().json.score || 0) + \"/10\" }\n      ]\n    },\n    {\n      \"type\": \"divider\"\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \n        \"type\": \"mrkdwn\", \n        \"text\": ($('Parse JSON Output').first().json.linkedin_post || \"Draft failed to generate.\") \n      }\n    },\n    {\n      \"type\": \"image\",\n      \"image_url\": ($('Fetch Article').first().json.image_url || \"https://via.placeholder.com/600x400?text=Image+Generating...\"),\n      \"alt_text\": \"Branded Visual\"\n    },\n    {\n      \"type\": \"divider\"\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"text\": \"✅ Approve & Post\" },\n          \"style\": \"primary\",\n          \"action_id\": \"approve_post\",\n          \"value\": $('Parse Payload').first().json.article_id.toString()\n        },\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"text\": \"🔁 Regenerate Again\" },\n          \"action_id\": \"regenerate_post\",\n          \"value\": $('Parse Payload').first().json.article_id.toString()\n        },\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"text\": \"🔄 Get Another\" },\n          \"style\": \"danger\",\n          \"action_id\": \"next_article\",\n          \"value\": $('Parse Payload').first().json.article_id.toString()\n        }\n      ]\n    }\n  ]\n})\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1904,
+        96
+      ],
+      "id": "2cc73cef-2a83-481f-a7b0-a3e5428d4831",
+      "name": "Send Draft to Slack",
+      "retryOnFail": true,
+      "credentials": {
+        "slackApi": {
+          "id": "MBYSIeRPeCHeBgrQ",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\nJSON.stringify({\n  \"channel\": $('Parse Payload').first().json.channel_id,\n  \"ts\": $('Parse Payload').first().json.message_ts,\n  \"text\": \"New LinkedIn Draft Ready\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"📝 New LinkedIn Draft Ready\" }\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Source:* <\" + ($('Fetch Next Candidate').first().json.source_url || \"#\") + \"|\" + ($('Fetch Next Candidate').first().json.title || \"No Title\") + \">\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Score:* \" + ($('Fetch Next Candidate').first().json.score || 0) + \"/10\" }\n      ]\n    },\n    {\n      \"type\": \"divider\"\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \n        \"type\": \"mrkdwn\", \n        \"text\": ($('Clean AI Output').first().json.linkedin_post || \"Draft failed to generate.\") \n      }\n    },\n    {\n      \"type\": \"image\",\n      \"image_url\": ($('Image URL').first().json.secure_url || \"https://via.placeholder.com/600x400?text=Image+Generating...\"),\n      \"alt_text\": \"Branded Visual\"\n    },\n    {\n      \"type\": \"divider\"\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"text\": \"✅ Approve & Post\" },\n          \"style\": \"primary\",\n          \"action_id\": \"approve_post\",\n          \"value\": $('Fetch Next Candidate').first().json.id.toString()\n        },\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"text\": \"🔁 Regenerate\" },\n          \"action_id\": \"regenerate_post\",\n          \"value\": $('Fetch Next Candidate').first().json.id.toString()\n        },\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"text\": \"🔄 Get Another\" },\n          \"style\": \"danger\",\n          \"action_id\": \"next_article\",\n          \"value\": $('Fetch Next Candidate').first().json.id.toString()\n        }\n      ]\n    }\n  ]\n})\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2176,
+        784
+      ],
+      "id": "46b96c3e-d2e7-4212-b18f-14be38d5a9b2",
+      "name": "Send Draft to Slack1",
+      "retryOnFail": true,
+      "credentials": {
+        "slackApi": {
+          "id": "MBYSIeRPeCHeBgrQ",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Fetch For Posting",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Article",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Next Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Groq Drafter",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Groq Drafter",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Groq Drafter": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON Output": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Send Draft to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Payload": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Image Prompt Generator",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Image Prompt Generator",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [
+        [
+          {
+            "node": "Image URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image URL": {
+      "main": [
+        [
+          {
+            "node": "Send Draft to Slack1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Prompt Generator": {
+      "main": [
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Image Prompt Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Groq Drafter1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Groq Drafter1",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Groq Drafter1": {
+      "main": [
+        [
+          {
+            "node": "Clean AI Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Next Candidate": {
+      "main": [
+        [
+          {
+            "node": "Groq Drafter1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean AI Output": {
+      "main": [
+        [
+          {
+            "node": "Image Prompt Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch For Posting": {
+      "main": [
+        [
+          {
+            "node": "Post on LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as Posted": {
+      "main": [
+        [
+          {
+            "node": "Notify \"Posted\" on Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Article": {
+      "main": [
+        [
+          {
+            "node": "Groq Drafter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post on LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Mark as Posted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Draft to Slack1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "Jly7C3hIVguV5cb2",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "80c68333-22c1-4c97-ba3f-75f90e7eaa5e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "af19d8cb880ce0ac15c69a2b4460a7094c26dc71164015f855851b43ac273bb9"
+  },
+  "id": "yxhSvGXGNqDdl81L",
+  "tags": []
+}

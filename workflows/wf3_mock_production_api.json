@@ -1,0 +1,47 @@
+{
+  "name": "Dummy LinkedIN EndPoint",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dummy_linkedin_endpoint",
+        "authentication": "headerAuth",
+        "options": {
+          "responseCode": {
+            "values": {}
+          },
+          "responseData": "Posted Successfully!!"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -512,
+        -48
+      ],
+      "id": "9e35c612-5b78-492f-b5b4-059f3f5643cb",
+      "name": "Webhook",
+      "webhookId": "516be04f-2dbe-4dd4-8409-7ad194b37920",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnusVSM4Uzbo3vQQ",
+          "name": "value-api"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {},
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "7ed305ea-dd46-47c6-96a7-75c73daba887",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "af19d8cb880ce0ac15c69a2b4460a7094c26dc71164015f855851b43ac273bb9"
+  },
+  "id": "mJJehmdTVmp8mTQH",
+  "tags": []
+}

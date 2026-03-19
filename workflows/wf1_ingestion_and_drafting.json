@@ -1,0 +1,974 @@
+{
+  "name": "WF1",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://techcrunch.com/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -1136,
+        -624
+      ],
+      "id": "321207a8-c4e0-4b59-8a6f-9f6da079c195",
+      "name": "Tech Crunch",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "alwaysOutputData": true,
+      "maxTries": 2,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://dev.to/feed",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -1136,
+        -816
+      ],
+      "id": "f9532475-d20b-4125-981b-ab69c5a5ab16",
+      "name": "Dev to",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "alwaysOutputData": true,
+      "maxTries": 2,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -688,
+        -720
+      ],
+      "id": "db41fe2e-5f4c-4aaf-b30d-82d662529ada",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "maxItems": 10
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -816
+      ],
+      "id": "7b0bfcdb-2699-4a97-9f64-76891e3208b7",
+      "name": "Limit",
+      "retryOnFail": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "maxItems": 10
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -624
+      ],
+      "id": "1ac5a055-f8e2-493e-94e2-174074e042b5",
+      "name": "Limit3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst now = new Date();\nconst cutoff = 48 * 60 * 60 * 1000;\nconst cjkRegex = /[\\u4e00-\\u9fff\\u3040-\\u30ff\\uac00-\\ud7af]/;\nconst htmlRegex = /<[^>]*>/g;\n\n// Process and filter the items\nconst processedItems = items.map(item => {\n  const d = item.json;\n  if (!d || Object.keys(d).length === 0) return null; // Catch completely empty items\n\n  let rawDate = null;\n  try {\n    rawDate = d.isoDate || d.pubDate || d.published || d['dc:date'] || null;\n  } catch (e) {}\n\n  let summary = d['content:encodedSnippet'] || d.contentSnippet || d.summary || d.description || '';\n  summary = summary.replace(htmlRegex, '').trim();\n  if (summary.length < 30 || summary === 'Comments') summary = '';\n  summary = summary.slice(0, 500);\n\n  const author = d.creator || d['dc:creator'] || d.author || 'Unknown';\n  const link = d.link || d.url || '';\n  let source = 'unknown';\n  if (link.includes('ycombinator')) source = 'hackernews';\n  else if (link.includes('dev.to'))  source = 'devto';\n  else if (link.includes('techcrunch')) source = 'techcrunch';\n  else if (link.includes('reddit'))  source = 'reddit';\n\n  let publishedISO = null;\n  let age = 0;\n  if (rawDate) {\n      try {\n          publishedISO = new Date(rawDate).toISOString();\n          age = now - new Date(publishedISO);\n      } catch (e) { } // Catch invalid dates\n  }\n\n  return {\n    json: {\n      title:     d.title || 'No title',\n      url:       link,\n      summary:   summary,\n      author:    author,\n      published: publishedISO,\n      source:    source,\n      age_hours: Math.round(age / (1000 * 60 * 60))\n    }\n  };\n})\n.filter(item => item && item.json.url && item.json.title !== 'No title')\n.filter(item => !cjkRegex.test(item.json.title))\n.filter(item => item.json.age_hours <= 48);\n\n// THE FIX: If the array is empty (feeds failed or 0 fresh articles), \n// return a dummy item so n8n continues to the IF node.\nif (processedItems.length === 0) {\n  return [{\n    json: {\n      is_empty_fallback: true\n    }\n  }];\n}\n\nreturn processedItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        -720
+      ],
+      "id": "a9c95c26-6094-42c0-8b18-7e0a95beacf4",
+      "name": "Normalize & Filter",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e4b1c2d3",
+              "leftValue": "={{ $json.url }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -240,
+        -720
+      ],
+      "id": "838b830e-f217-45fa-95f8-0f6330d6efdd",
+      "name": "Has Fresh Articles?",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT unnest(string_to_array($1, '|||')) AS url\nEXCEPT\nSELECT source_url FROM content_pipeline",
+        "options": {
+          "queryReplacement": "=={{ $input.all().map(i => i.json.url).join('|||') }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -16,
+        -800
+      ],
+      "id": "e664ce14-cd95-4a7e-a4eb-f210a0ca2135",
+      "name": "Postgres — Dedup Check",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "lSkS7xO4KjOX4dD6",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const unseenUrls = $('Postgres — Dedup Check').all().map(i => i.json.url);\nconst allArticles = $('Has Fresh Articles?').all(0, 0);\n\nconst fresh = allArticles.filter(a => unseenUrls.includes(a.json.url));\n\nconst scored = fresh.map(item => {\n  const a = item.json;\n  let score = 0;\n\n  if (a.summary && a.summary.length > 100) score += 3;\n  if (a.source === 'techcrunch') score += 2;\n  if (a.source === 'devto') score += 2;\n  if (a.source === 'reddit') score += 1;\n  if (a.age_hours <= 6) score += 3;\n  else if (a.age_hours <= 12) score += 2;\n  else if (a.age_hours <= 24) score += 1;\n\n  const keywords = ['ai', 'llm', 'gpt', 'model', 'developer', 'code', 'api', 'open source', 'startup'];\n  const titleLower = a.title.toLowerCase();\n  keywords.forEach(k => { if (titleLower.includes(k)) score += 1; });\n  score = Math.min(score, 10)\n  return { json: { ...a, score } };\n});\n\nscored.sort((a, b) => b.json.score - a.json.score);\nreturn scored;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        -800
+      ],
+      "id": "e4398556-1696-461d-93df-4be6e899ebf7",
+      "name": "Score Articles"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO content_pipeline (source_url, title, summary, source_name, status, score)\nVALUES\n{{ $input.all().map(i => \n  `('${i.json.url.replace(/'/g, \"''\")}', '${i.json.title.replace(/'/g, \"''\")}', '${(i.json.summary || '').replace(/'/g, \"''\")}', '${i.json.source}', 'candidate', ${i.json.score})`\n).join(',\\n') }}\nON CONFLICT (source_url) DO NOTHING;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        432,
+        -800
+      ],
+      "id": "2132d5c4-4bd7-4134-b39e-ecd3e6b55a5d",
+      "name": "Postgres — Insert Candidates",
+      "credentials": {
+        "postgres": {
+          "id": "lSkS7xO4KjOX4dD6",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE content_pipeline \nSET status = 'pending_approval'\nWHERE id = (\n    SELECT id FROM content_pipeline \n    WHERE status = 'candidate'\n    AND created_at >= NOW() - INTERVAL '12 hours'  -- ONLY LOOK AT TODAY'S\n    ORDER BY score DESC, created_at DESC \n    LIMIT 1\n)\nRETURNING *;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        656,
+        -800
+      ],
+      "id": "e50112e5-165a-4f6e-9ab4-e8c3fa565585",
+      "name": "Get TODAY'S Best",
+      "credentials": {
+        "postgres": {
+          "id": "lSkS7xO4KjOX4dD6",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE content_pipeline \nSET status = 'pending_approval'\nWHERE id = (\n    SELECT id FROM content_pipeline \n    WHERE status = 'candidate'\n    AND created_at >= NOW() - INTERVAL '48 hours' -- NO OLDER THAN 2 DAYS\n    AND created_at < NOW() - INTERVAL '12 hours'  -- MUST BE OLDER THAN TODAY\n    ORDER BY score DESC \n    LIMIT 1\n)\nRETURNING *;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -16,
+        -624
+      ],
+      "id": "571f3a27-d5c2-4a84-8957-17a1a3dc687f",
+      "name": "Get YESTERDAY'S Best (Fallback)",
+      "credentials": {
+        "postgres": {
+          "id": "lSkS7xO4KjOX4dD6",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "Delete FROM content_pipeline \n--ALTER TABLE content_pipeline ADD COLUMN image_url TEXT;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2432,
+        -640
+      ],
+      "id": "a17363d6-2172-453f-a188-5baeb2cb9757",
+      "name": "Delete the table content",
+      "credentials": {
+        "postgres": {
+          "id": "lSkS7xO4KjOX4dD6",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1408,
+        -752
+      ],
+      "id": "ba2574b6-1d2f-43b7-a289-da98345554f0",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -1408,
+        192
+      ],
+      "id": "bd3b3813-5a5b-4b55-9905-046ad8101701",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "n3aGjNPx6bsCvI8D",
+          "name": "Paid Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -1264,
+        192
+      ],
+      "id": "8e953605-7960-474e-ac48-3fbd8e5e2b1c",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "OhQUhhiEqGLHAB56",
+          "name": "Free Tier"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"image_prompt\": \"Your single sentence visual description goes here followed by the exact brand phrase.\"\n}",
+        "autoFix": true,
+        "customizeRetryPrompt": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -448,
+        80
+      ],
+      "id": "28f7c0ff-936b-4657-b3ea-95d1283cbad4",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        192
+      ],
+      "id": "9fbca90e-fe8f-47dc-9d76-8a9ce59eccf5",
+      "name": "Groq Chat Model3",
+      "credentials": {
+        "groqApi": {
+          "id": "n3aGjNPx6bsCvI8D",
+          "name": "Paid Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        176
+      ],
+      "id": "4fe00848-1f3e-485f-99d7-38d1fc3fd530",
+      "name": "Groq Chat Model4",
+      "credentials": {
+        "groqApi": {
+          "id": "n3aGjNPx6bsCvI8D",
+          "name": "Paid Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash-image",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash-image (Nano Banana)"
+        },
+        "prompt": "={{ $json.output.image_prompt }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -208,
+        -64
+      ],
+      "id": "6eb8e92f-3f71-43a1-8400-508cbd2e0611",
+      "name": "Generate an image",
+      "retryOnFail": true,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "OExywDBTyoZVUcTe",
+          "name": "508"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a LinkedIn post based on this article:\n\nTitle: {{$json.title}}\nSummary: {{$json.summary}}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are a LinkedIn ghostwriter for a software developer with 1 year of experience. \n\nVoice & Tone:\n- Conversational, raw, and not corporate. First person (\"I\", \"my\"), direct.\n- Absolutely NO buzzwords (avoid: \"leverage\", \"synergy\", \"game-changer\", \"delve\", \"testament\").\n- Short punchy sentences. Max 2 lines per paragraph.\n\nFormat & Structure:\n- Hook in the first line (no fluff, get straight to the point).\n- 4 to 6 short paragraphs (approx 200-250 words).\n- End with a thought-provoking question to drive comments.\n- Exactly 3 to 5 relevant hashtags at the very bottom.\n\nHere are three examples of my exact writing style. You MUST mimic this formatting, length, and tone perfectly:\n\nEXAMPLE 1:\nEveryone is obsessed with buying more AI tokens. I think we're missing the point.\n\nI spent all weekend trying to force an AI agent to understand my side project. I kept expanding the context window. It kept hallucinating. \n\nThen I realized the actual problem. My code was complete spaghetti. \n\nWe treat AI like senior engineers and throw 10-page wikis at them to compensate for our bad architecture. \n\nWhen you write clean, modular code with good naming conventions, agents don't need a 100k context window. They just read the function and know what to do. \n\nStop throwing API credits at bad code. \n\nAre you optimizing your prompts, or optimizing your actual codebase?\n\n#softwareengineering #ai #cleanCode #developers\n\n\nEXAMPLE 2:\nI used to think I needed to learn every new framework that drops. I was completely wrong.\n\nWhen that massive new JavaScript library released yesterday, my feed blew up. I immediately felt the FOMO creeping in.\n\nBut as a dev with just about a year under my belt, I'm realizing something important. The fundamentals don't change. \n\nInstead of rewriting my whole app in the new hotness, I spent two hours mastering standard database indexing. It actually made my app twice as fast.\n\nHype is loud, but fundamentals actually pay the bills. \n\nWhat is one \"boring\" basic concept you recently revisited that blew your mind?\n\n#webdev #programming #techcareers #learning\n\n\nEXAMPLE 3:\nImposter syndrome doesn't go away when you get your first dev job. It just changes shape.\n\nFor my first 6 months, I was terrified to open a Pull Request. I thought the senior devs would laugh at my logic. \n\nYesterday, I broke the staging environment. \n\nBut instead of getting fired, my lead engineer just sat down with me, opened the logs, and said, \"Alright, let's figure out why this happened.\"\n\nTech isn't about writing perfect code on the first try. It's about how quickly you can recover and learn when things inevitably catch on fire.\n\nIf you're a junior dev right now, stop trying to be perfect. Just try to be teachable. \n\nWhat was your biggest mess-up in your first year of coding?\n\n#juniordeveloper #tech #codinglife #softwaredevelopment\n\n---\nYOUR TASK:\nWrite a LinkedIn post based on the article provided by the user. \nOUTPUT ONLY THE POST TEXT. Do not include introductory text like \"Here is the post.\" Just output the raw post.\n---\nCRITICAL: You must use double newlines between every paragraph to ensure proper spacing on mobile devices\n---\nIMPORTANT: Your entire response must be a valid JSON object. \nDo not include any conversational filler. \nFormat: {\"linkedin_post\": \"...\"}\n---\nOUTPUT FORMAT:\nYou must respond with ONLY a valid JSON object. Do not include markdown code blocks (like ```json), do not include intro text. Just the raw JSON object.\n\nOutput Structure:\n{\n  \"linkedin_post\": \"Your complete formatted post goes here, including line breaks and hashtags.\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1392,
+        0
+      ],
+      "id": "2063ccc5-44d4-4386-a698-e979b4dede1b",
+      "name": "Groq Drafter",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE content_pipeline \nSET \n  status = 'pending_approval',\n  draft_content = '{{ $('Parse JSON Output').item.json.linkedin_post.replace(/'/g, \"''\") }}',\n  image_url = '{{ $('Image URL').first().json.secure_url }}'\nWHERE id = '{{ $('Final Candidate').item.json.id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        544,
+        -64
+      ],
+      "id": "7aa461cf-0379-41b1-949c-7137fce2bfd7",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "lSkS7xO4KjOX4dD6",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        -624
+      ],
+      "id": "e077098e-1804-4045-ad63-6931dd1e28a8",
+      "name": "Final Candidate"
+    },
+    {
+      "parameters": {
+        "operation": "uploadFile",
+        "additionalFieldsFile": {}
+      },
+      "type": "n8n-nodes-cloudinary.cloudinary",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -64
+      ],
+      "id": "5f4a058f-189b-4c95-aa3f-12997ae39a0c",
+      "name": "Image URL",
+      "credentials": {
+        "cloudinaryApi": {
+          "id": "WwPRyXWRj1tz5tQ5",
+          "name": "Cloudinary account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write the image prompt for this post:\n{{ $json.linkedin_post }}",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are an expert AI image prompt engineer. Read the provided LinkedIn post and write a SINGLE SENTENCE but in detailed wit around 100-150 words image generation prompt for it.\n\nRules:\n1. Describe a simple, literal 3D object or scene representing the core concept of the post.\n2. You MUST append this exact phrase to the end of the prompt: \", minimalist 3D isometric illustration, clean dark background, subtle neon purple and cyan accents, highly detailed tech startup aesthetic.\"\n3. Text Related to the Post Should have an impact or hint in the visuals\n\nOUTPUT FORMAT:\nRespond with ONLY a valid JSON object. Do not include markdown formatting.\n\nOutput Structure:\n{\n  \"image_prompt\": \"Your single sentence visual description goes here followed by the exact brand phrase.\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -592,
+        -64
+      ],
+      "id": "ae5d3f9e-b982-4243-81dd-30cd3c5e0678",
+      "name": "Image Prompt Generator",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        176
+      ],
+      "id": "986ed121-fe39-409c-80f4-2d8b670d6183",
+      "name": "Groq Chat Model5",
+      "credentials": {
+        "groqApi": {
+          "id": "OhQUhhiEqGLHAB56",
+          "name": "Free Tier"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let rawText = $input.item.json.output || \"\";\n\n// 1. Strip markdown code blocks\nif (rawText.includes('```json')) rawText = rawText.split('```json')[1].split('```')[0];\nelse if (rawText.includes('```')) rawText = rawText.split('```')[1].split('```')[0];\n\nrawText = rawText.trim();\n\ntry {\n  // Attempt 1: Standard parse\n  let safeText = rawText.replace(/\\n/g, \"\\\\n\").replace(/\\r/g, \"\\\\r\");\n  let parsed = JSON.parse(safeText);\n  return { linkedin_post: parsed.linkedin_post };\n} catch (e) {\n  // Attempt 2 (The Titanium Hammer): Aggressive String Extraction\n  \n  // Strip the opening JSON keys and quotes\n  let cleanText = rawText.replace(/^[\\s\\S]*?\"linkedin_post\"\\s*:\\s*\"/, '');\n  \n  // THE MAGIC FIX: Vacuum up ANY combination of trailing quotes, spaces, newlines, or braces at the very end\n  cleanText = cleanText.replace(/[\"\\s}\\]]+$/, '');\n  \n  // Un-escape any quotes or newlines the LLM tried to format\n  cleanText = cleanText.replace(/\\\\\"/g, '\"');\n  cleanText = cleanText.replace(/\\\\n/g, '\\n');\n  \n  return { linkedin_post: cleanText.trim() };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        0
+      ],
+      "id": "059541f7-17f8-424e-9d0c-8d49d956e404",
+      "name": "Parse JSON Output"
+    },
+    {
+      "parameters": {
+        "content": "# 📡 Phase 1: Resilient Data Ingestion\n## Fetches the latest AI & Tech news from multiple RSS sources.\n\n## **Architectural Highlight:** Implements a self-healing fallback mechanism. If the primary feed returns 0 items for the current 24-hour window, the system dynamically expands the query to fetch yesterday's top articles. This guarantees the content pipeline never runs dry, even on slow news days.",
+        "height": 672,
+        "width": 1152,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1440,
+        -1120
+      ],
+      "typeVersion": 1,
+      "id": "98b1cf15-343b-46df-87a8-011281997db7",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# ⚖️ Phase 2: Deduplication & Heuristic Scoring\n## Cross-references incoming URLs against the Postgres database to prevent duplicate processing. \n\n## Applies a custom scoring algorithm (capped at 10) based on:\n### 1. Content length\n### 2. Source authority (e.g., TechCrunch, Dev.to)\n### 3. Freshness (Age in hours)\n### 4. Keyword relevance\n### Only the highest-scoring candidate advances to the AI Drafter.",
+        "height": 672,
+        "width": 1312,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -272,
+        -1120
+      ],
+      "typeVersion": 1,
+      "id": "262b4cb0-538e-49b5-a044-501a1309f5e8",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# 🤖 Phase 3: The 'Brand DNA' Drafter & Asset Generator\n## Passes the winning article to Llama 3.3 (via Groq) using a strict system prompt to ensure formatting and brand voice. \n\n## **Resilience Feature:** Uses a custom Regex-powered Code Node to extract and clean the JSON output, bypassing standard LLM function-calling bugs to guarantee 100% parse reliability. Generates and hosts a contextual thumbnail via Cloudinary.",
+        "height": 736,
+        "width": 672,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1440,
+        -432
+      ],
+      "typeVersion": 1,
+      "id": "8c6ce386-af83-4d24-83b5-5283f7ef8a01",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "# 📲 Phase 5: Interactive Approval Matrix\n## Pushes an interactive Block Kit UI to a private Slack channel. \n\n## Updates the Postgres state to `pending_approval` to lock the article. The system now halts and waits for a webhook trigger from the human reviewer to route to: Publish, Regenerate, or fetch the Next Candidate.",
+        "height": 736,
+        "width": 848
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        192,
+        -432
+      ],
+      "typeVersion": 1,
+      "id": "26deb376-eceb-408a-8771-03df534d1288",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "# 🎨 Phase 4: Dynamic Asset Generation & CDN Delivery\n## Uses Gemini to generate a custom, context-aware thumbnail based on the article's summary and keywords. \n\n## **Architectural Highlight:** Instead of passing volatile binary data streams between workflows, the system instantly uploads the raw buffer to Cloudinary (a professional CDN). This generates a persistent, high-availability public URL (`secure_url`), which strictly satisfies the formatting requirements for both Slack's Block Kit UI and LinkedIn's Article API.",
+        "height": 736,
+        "width": 928,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -752,
+        -432
+      ],
+      "typeVersion": 1,
+      "id": "135f316c-5a2f-4d90-ac03-88588533b18f",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\nJSON.stringify({\n  \"channel\": \"C0AM93SPQ21\",\n  \"text\": \"📝 New LinkedIn Draft Ready\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"📝 New LinkedIn Draft Ready\" }\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Source:* <\" + ($('Final Candidate').first().json.source_url || \"#\") + \"|\" + ($('Final Candidate').first().json.title || \"No Title\") + \">\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Score:* \" + ($('Final Candidate').first().json.score || 0) + \"/10\" }\n      ]\n    },\n    {\n      \"type\": \"divider\"\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \n        \"type\": \"mrkdwn\", \n        \"text\": ($('Parse JSON Output').first().json.linkedin_post || \"Draft failed to generate.\") \n      }\n    },\n    {\n      \"type\": \"image\",\n      \"image_url\": ($('Image URL').first().json.secure_url || \"https://via.placeholder.com/600x400?text=Image+Generating...\"),\n      \"alt_text\": \"Branded Visual\"\n    },\n    {\n      \"type\": \"divider\"\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"text\": \"✅ Approve & Post\" },\n          \"style\": \"primary\",\n          \"action_id\": \"approve_post\",\n          \"value\": ($('Final Candidate').first().json.id || \"0\").toString()\n        },\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"text\": \"🔁 Regenerate\" },\n          \"action_id\": \"regenerate_post\",\n          \"value\": ($('Final Candidate').first().json.id || \"0\").toString()\n        },\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"text\": \"🔄 Get Another\" },\n          \"style\": \"danger\",\n          \"action_id\": \"next_article\",\n          \"value\": ($('Final Candidate').first().json.id || \"0\").toString()\n        }\n      ]\n    }\n  ]\n})\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        304,
+        -64
+      ],
+      "id": "58d56adb-53be-4577-bca7-b120b6f738da",
+      "name": "Send Draft to Slack",
+      "retryOnFail": true,
+      "credentials": {
+        "slackApi": {
+          "id": "MBYSIeRPeCHeBgrQ",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tech Crunch": {
+      "main": [
+        [
+          {
+            "node": "Limit3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Limit3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dev to": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Limit3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        []
+      ]
+    },
+    "Normalize & Filter": {
+      "main": [
+        [
+          {
+            "node": "Has Fresh Articles?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Fresh Articles?": {
+      "main": [
+        [
+          {
+            "node": "Postgres — Dedup Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get YESTERDAY'S Best (Fallback)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres — Dedup Check": {
+      "main": [
+        [
+          {
+            "node": "Score Articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Articles": {
+      "main": [
+        [
+          {
+            "node": "Postgres — Insert Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres — Insert Candidates": {
+      "main": [
+        [
+          {
+            "node": "Get TODAY'S Best",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get TODAY'S Best": {
+      "main": [
+        [
+          {
+            "node": "Final Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get YESTERDAY'S Best (Fallback)": {
+      "main": [
+        [
+          {
+            "node": "Final Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Groq Drafter",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Groq Drafter",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Image Prompt Generator",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Image Prompt Generator",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Groq Drafter": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [
+        [
+          {
+            "node": "Image URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Candidate": {
+      "main": [
+        [
+          {
+            "node": "Groq Drafter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        []
+      ]
+    },
+    "Image URL": {
+      "main": [
+        [
+          {
+            "node": "Send Draft to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Prompt Generator": {
+      "main": [
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Dev to",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Tech Crunch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Image Prompt Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON Output": {
+      "main": [
+        [
+          {
+            "node": "Image Prompt Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Draft to Slack": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "Jly7C3hIVguV5cb2"
+  },
+  "versionId": "0632da86-483e-4ce0-8272-336941d334d6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "af19d8cb880ce0ac15c69a2b4460a7094c26dc71164015f855851b43ac273bb9"
+  },
+  "id": "6mEVq68r7p66ofAN",
+  "tags": []
+}
