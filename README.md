@@ -15,7 +15,7 @@ At its core, the pipeline ingests tech-focused RSS feeds, scores candidates usin
 
 ![Slack UI Screenshot](https://github.com/user-attachments/assets/1b14447b-a85d-4e18-95e8-5a955c176bed) 
 
-*The interactive "Human Gatekeeper" UI built with Slack Block Kit.
+* The interactive "Human Gatekeeper" UI built with Slack Block Kit.
 
 ---
 
@@ -39,7 +39,7 @@ At its core, the pipeline ingests tech-focused RSS feeds, scores candidates usin
 ![n8n Canvas Screenshot](https://github.com/user-attachments/assets/d85bf234-ac51-4a75-b1a4-6119646837d9)
 ![n8n Canvas Screenshot2](https://github.com/user-attachments/assets/bbd15345-3418-436a-9e8a-2586a4669ff1)
 
-*The ingestion, scoring, routing, and drafting workflows and pipeline.
+* The ingestion, scoring, routing, and drafting workflows and pipeline.
 
 ---
 
